@@ -1,37 +1,37 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { join } from 'path';
-import { unlink } from 'fs/promises';
+import { v2 as cloudinary } from 'cloudinary';
+import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import * as streamifier from 'streamifier';
 
 @Injectable()
 export class ImagesService {
-  private readonly baseUrl: string;
-
-  constructor(private readonly config: ConfigService) {
-    this.baseUrl = this.config.get<string>('BASE_URL') || 'http://localhost:3000';
-  }
-
   async handleUpload(file: Express.Multer.File): Promise<string> {
-    // Generate the public URL
-    const publicUrl = `${this.baseUrl}/images/files/${file.filename}`;
-    return publicUrl;
-  }
+    return new Promise((resolve, reject) => {
+      const upload = cloudinary.uploader.upload_stream((error, result) => {
+        if (error) return reject(error);
+        resolve(result?.secure_url || '');
+      });
 
-  getLocalPath(filename: string): string {
-    return join(process.cwd(), 'uploads', filename);
+      streamifier.createReadStream(file.buffer).pipe(upload);
+    });
   }
 
   async deleteImage(imageUrl: string) {
     try {
-      // Extract filename from URL
-      const filename = imageUrl.split('/').pop();
-      if (filename) {
-        const filePath = this.getLocalPath(filename);
-        await unlink(filePath);
-      }
+      // Extract public_id from URL (Cloudinary specific)
+      // Example: https://res.cloudinary.com/demo/image/upload/v12345678/sample.jpg
+      const splitUrl = imageUrl.split('/');
+      const filename = splitUrl[splitUrl.length - 1];
+      const publicId = filename.split('.')[0];
+      
+      await cloudinary.uploader.destroy(publicId);
     } catch (error) {
-      console.error('Error deleting image:', error);
-      // Don't throw error if image delete fails, just log it
+      console.error('Error deleting image from Cloudinary:', error);
     }
+  }
+
+  // Helper for backward compatibility (can be removed if not needed)
+  getLocalPath(filename: string): string {
+    return '';
   }
 }
