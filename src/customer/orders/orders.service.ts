@@ -181,15 +181,16 @@ export class OrdersService {
     return order;
   }
 
-  async updateStatus(userId: string, id: string, status: OrderStatus) {
+  async cancelOrder(userId: string, id: string) {
     const order = await this.findOne(userId, id);
 
-    // If it's a customer, we might want to restrict what they can change.
-    // But as requested, I will allow changing to any status.
-    
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Only pending orders can be cancelled');
+    }
+
     return this.prisma.order.update({
       where: { id },
-      data: { status },
+      data: { status: OrderStatus.CANCELLED },
       include: {
         orderItems: {
           include: {
