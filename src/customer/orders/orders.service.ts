@@ -36,6 +36,7 @@ export class OrdersService {
   }
 
   async create(userId: string, dto: CreateOrderDto) {
+    let order;
     const productIds = dto.items.map((item) => item.productId);
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -89,7 +90,7 @@ export class OrdersService {
         }
       }
 
-      return this.prisma.order.update({
+      order = await this.prisma.order.update({
         where: { id: existingOrder.id },
         data: {
           totalAmount: existingOrder.totalAmount + addedAmount,
@@ -100,7 +101,7 @@ export class OrdersService {
           orderItems: { include: { product: true } },
         },
       });
-    }
+    } else {
 
     let totalAmount = 0;
     const orderItemsData = dto.items.map((item) => {
@@ -116,7 +117,7 @@ export class OrdersService {
       };
     });
 
-    const order = await this.prisma.order.create({
+    order = await this.prisma.order.create({
       data: {
         userId,
         totalAmount,
@@ -135,6 +136,7 @@ export class OrdersService {
         },
       },
     });
+}
 
     // Clear the user's cart after successful order
     await this.prisma.cartItem.deleteMany({
