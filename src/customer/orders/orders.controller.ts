@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Patch,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -12,6 +13,7 @@ import {
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CheckoutDto } from './dto/checkout.dto';
+import { UpdateOrderStatusDto } from '../../admin/orders/dto/order.dto';
 import { GetCurrentUserId, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Role, PaymentMethod } from '@prisma/client';
@@ -69,5 +71,18 @@ export class OrdersController {
   @Get(':id')
   findOne(@GetCurrentUserId() userId: string, @Param('id') id: string) {
     return this.ordersService.findOne(userId, id);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @GetCurrentUserId() userId: string,
+    @Param('id') id: string,
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+  ) {
+    return this.ordersService.updateStatus(
+      userId,
+      id,
+      updateOrderStatusDto.status,
+    );
   }
 }

@@ -180,4 +180,23 @@ export class OrdersService {
 
     return order;
   }
+
+  async updateStatus(userId: string, id: string, status: OrderStatus) {
+    const order = await this.findOne(userId, id);
+
+    // If it's a customer, we might want to restrict what they can change.
+    // But as requested, I will allow changing to any status.
+    
+    return this.prisma.order.update({
+      where: { id },
+      data: { status },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+  }
 }

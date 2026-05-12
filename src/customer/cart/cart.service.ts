@@ -87,4 +87,37 @@ export class CartService {
       },
     });
   }
+
+  async updateQuantity(userId: string, productId: string, action: 'increment' | 'decrement') {
+    const cart = await this.getCart(userId);
+
+    const cartItem = await this.prisma.cartItem.findUnique({
+      where: {
+        cartId_productId: {
+          cartId: cart.id,
+          productId,
+        },
+      },
+    });
+
+    if (!cartItem) {
+      throw new NotFoundException('Item not found in cart');
+    }
+
+    if (action === 'decrement' && cartItem.quantity <= 1) {
+      return this.removeItem(userId, productId);
+    }
+
+    return this.prisma.cartItem.update({
+      where: {
+        cartId_productId: {
+          cartId: cart.id,
+          productId,
+        },
+      },
+      data: {
+        quantity: action === 'increment' ? { increment: 1 } : { decrement: 1 },
+      },
+    });
+  }
 }

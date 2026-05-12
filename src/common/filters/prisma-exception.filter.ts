@@ -21,10 +21,19 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       case 'P2002': {
         status = HttpStatus.CONFLICT;
         const target = (exception.meta?.target as string[]) || [];
-        message = `Unique constraint failed on the fields: (${target.join(', ')})`;
-        if (target.includes('nameEn')) message = 'English name already exists';
-        if (target.includes('nameAr')) message = 'Arabic name already exists';
-        if (target.includes('email')) message = 'Email already exists';
+        
+        let fieldName = 'Record';
+        if (Array.isArray(target) && target.length > 0) {
+          fieldName = target.join(', ');
+          if (target.includes('nameEn')) message = 'English name already exists';
+          else if (target.includes('nameAr')) message = 'Arabic name already exists';
+          else if (target.includes('email')) message = 'Email already exists';
+          else message = `This ${fieldName} already exists.`;
+        } else if (typeof target === 'string') {
+          message = `This ${target} already exists.`;
+        } else {
+          message = 'This record already exists. Please use a different value.';
+        }
         break;
       }
       case 'P2025': {
